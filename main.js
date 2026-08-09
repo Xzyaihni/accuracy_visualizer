@@ -9,6 +9,8 @@ const smoothness = document.getElementById("smoothness");
 
 const gradient_checkbox = document.getElementById("gradient_checkbox");
 
+const data_info_text = document.getElementById("data_info");
+
 var slider_value = 0.0;
 var use_gradient = true;
 
@@ -31,6 +33,16 @@ gradient_checkbox.addEventListener("click", () => {
 
     display_files();
 });
+
+function set_data_info_text(text)
+{
+    data_info_text.textContent = text;
+}
+
+function error_message(message)
+{
+    set_data_info_text("error: " + message);
+}
 
 function change_smoothness(event)
 {
@@ -72,7 +84,16 @@ function show_tooltip(name, p, e)
     tooltip.style.top = e.layerY + "px";
     tooltip.style.left = e.layerX + "px";
 
-    tooltip.children[0].textContent = name + ": " + (p * 100.0) + "%";
+    var value;
+    if (Array.isArray(p))
+    {
+        value = p.map((is_correct) => is_correct ? "✅" : "❌").reduce((acc, x) => acc + x);
+    } else
+    {
+        value = (p * 100.0) + "%";
+    }
+
+    tooltip.children[0].textContent = name + " " + value;
 }
 
 function hide_tooltip()
@@ -90,6 +111,8 @@ function line_div()
 
 function clear_full()
 {
+    set_data_info_text("no data loaded");
+
     clear_words();
     clear_display();
 }
@@ -218,11 +241,36 @@ function display_files(line_limit)
         return line_limit < text_container.children.length;
     }
 
-    const sample_value = current_files[0][0][1];
-    const is_boolean = (sample_value === true || sample_value === false);
+    function set_to_last()
+    {
+        if (current_files.length > 1)
+        {
+            current_files = [current_files[current_files.length - 1]];
+        }
+    }
+
+    function data_is_boolean(sample)
+    {
+        return (sample === true || sample === false);
+    }
+
+    var is_boolean = data_is_boolean(current_files[0][0][1]);
+
+    current_files.forEach((file) => {
+        if (is_boolean !== data_is_boolean(file[0][1]))
+        {
+            // files are different types
+            set_to_last();
+        }
+    });
+
+    is_boolean = data_is_boolean(current_files[0][0][1]);
 
     if (is_boolean)
     {
+        var total_words = 0;
+        var total_correct = 0;
+
         for(let i = 0; i < current_files[0].length; ++i)
         {
             if (early_exit())
@@ -232,14 +280,33 @@ function display_files(line_limit)
 
             const pair = current_files[0][i];
 
+            if (!current_files.every((file) => file[i][0] === pair[0]))
+            {
+                error_message("data words mismatch");
+                return;
+            }
+
+            total_words += 1;
+
+            if (current_files.some((file) => file[i][1]))
+            {
+                total_correct += 1;
+            }
+
             append_word(pair[0], is_boolean, current_files.map((file) => file[i][1]));
         }
+
+        var message = "total combined accuracy: " + ((total_correct / total_words) * 100.0) + "%";
+        message += "\n";
+        message += total_correct + "/" + total_words;
+
+        set_data_info_text(message);
     } else
     {
-        if (current_files.length > 1)
-        {
-            current_files = [current_files[0]];
-        }
+        set_to_last();
+
+        var total_words = 0;
+        var total_score = 0.0;
 
         const file = current_files[0];
 
@@ -252,8 +319,23 @@ function display_files(line_limit)
 
             const pair = current_files[0][i];
 
+            total_words += 1;
+            total_score += pair[1];
+
             append_word(pair[0], is_boolean, pair[1]);
         }
+
+        const total_error = total_words - total_score;
+
+        var message = "total error: " + total_error;
+        message += "\n";
+        message += "average error: " + ((total_error / total_words) * 100.0) + "%";
+        message += "\n";
+        message += "total score: " + total_score;
+        message += "\n";
+        message += "accuracy: " + ((total_score / total_words) * 100.0) + "%";
+
+        set_data_info_text(message);
     }
 }
 
