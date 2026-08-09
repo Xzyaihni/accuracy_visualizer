@@ -34,6 +34,26 @@ gradient_checkbox.addEventListener("click", () => {
     display_files();
 });
 
+function word_accuracy(word)
+{
+    const [correct, total] = word_matches(word);
+
+    return ((correct / total) * 100.0) + "%";
+}
+
+function word_matches(word)
+{
+    const [total, correct] = current_files[0].reduce((acc, pair) => {
+        const [total, correct] = acc;
+
+        const new_correct = pair[1] ? (correct + 1) : correct;
+
+        return (pair[0] === word || pair[0] === (" " + word)) ? [total + 1, new_correct] : [total, correct];
+    }, [0, 0]);
+
+    return [correct, total];
+}
+
 function set_data_info_text(text)
 {
     data_info_text.textContent = text;
