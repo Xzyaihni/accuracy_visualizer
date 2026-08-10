@@ -107,7 +107,7 @@ function restart_display_timer()
     display_timer = setTimeout(display_files, 500);
 }
 
-function show_tooltip(name, mode, p, maybe_predicted, e)
+function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
 {
     tooltip.style.display = "inline-block";
     tooltip.style.top = e.layerY + "px";
@@ -133,7 +133,8 @@ function show_tooltip(name, mode, p, maybe_predicted, e)
         return x === "\n" ? "\\n" : x;
     }
 
-    tooltip.children[0].textContent = fmt(name) + " " + value;
+    tooltip.children[0].textContent = "word index: " + word_index + "\n";
+    tooltip.children[0].textContent += fmt(name) + " " + value;
 
     if (maybe_predicted !== undefined)
     {
@@ -174,7 +175,7 @@ function clear_display()
     text_container.appendChild(line_div());
 }
 
-function append_word(word, mode, word_value, maybe_predicted)
+function append_word(word, mode, word_value, word_index, maybe_predicted)
 {
     const this_line_div = text_container.lastChild;
 
@@ -242,7 +243,7 @@ function append_word(word, mode, word_value, maybe_predicted)
 
     function add_listener(value)
     {
-        value.addEventListener("mouseenter", (e) => show_tooltip(word, mode, word_value, maybe_predicted, e));
+        value.addEventListener("mouseenter", (e) => show_tooltip(word, mode, word_value, word_index, maybe_predicted, e));
         value.addEventListener("mouseleave", hide_tooltip);
     }
 
@@ -389,6 +390,7 @@ function display_files(line_limit)
                 pair[0],
                 mode,
                 current_files.map((file) => file[i][1]),
+                i,
                 current_files.length === 1 ? pair[2] : undefined
             );
         }
@@ -417,7 +419,7 @@ function display_files(line_limit)
 
             total_score += pair[1];
 
-            append_word(pair[0], mode, pair[1], pair[2]);
+            append_word(pair[0], mode, pair[1], i, pair[2]);
         }
 
         const total_error = total_words - total_score;
@@ -453,7 +455,7 @@ function display_files(line_limit)
 
             total_place += pair[1];
 
-            append_word(pair[0], mode, [pair[1], total_places], pair[2]);
+            append_word(pair[0], mode, [pair[1], total_places], i, pair[2]);
         }
 
         var message = "average place: " + ((total_place / total_places) + 1);
