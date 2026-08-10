@@ -98,7 +98,7 @@ function restart_display_timer()
     display_timer = setTimeout(display_files, 500);
 }
 
-function show_tooltip(name, p, e)
+function show_tooltip(name, p, maybe_predicted, e)
 {
     tooltip.style.display = "inline-block";
     tooltip.style.top = e.layerY + "px";
@@ -114,6 +114,11 @@ function show_tooltip(name, p, e)
     }
 
     tooltip.children[0].textContent = name + " " + value;
+
+    if (maybe_predicted !== undefined)
+    {
+        tooltip.children[0].textContent += "\npredicted: " + maybe_predicted;
+    }
 }
 
 function hide_tooltip()
@@ -149,7 +154,7 @@ function clear_display()
     text_container.appendChild(line_div());
 }
 
-function append_word(word, is_boolean, is_correct_array)
+function append_word(word, is_boolean, is_correct_array, maybe_predicted)
 {
     const this_line_div = text_container.lastChild;
 
@@ -201,7 +206,7 @@ function append_word(word, is_boolean, is_correct_array)
 
     function add_listener(value)
     {
-        value.addEventListener("mouseenter", (e) => show_tooltip(word, is_correct_array, e));
+        value.addEventListener("mouseenter", (e) => show_tooltip(word, is_correct_array, maybe_predicted, e));
         value.addEventListener("mouseleave", hide_tooltip);
     }
 
@@ -303,6 +308,11 @@ function display_files(line_limit)
             if (!current_files.every((file) => file[i][0] === pair[0]))
             {
                 error_message("data words mismatch");
+
+                set_to_last();
+
+                display_files();
+
                 return;
             }
 
@@ -342,7 +352,7 @@ function display_files(line_limit)
             total_words += 1;
             total_score += pair[1];
 
-            append_word(pair[0], is_boolean, pair[1]);
+            append_word(pair[0], is_boolean, pair[1], pair[2]);
         }
 
         const total_error = total_words - total_score;
