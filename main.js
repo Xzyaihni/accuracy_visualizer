@@ -88,6 +88,15 @@ function map_certainty(x)
     return (1.0 / Math.log((b - 1.0) / b)) * Math.log((b - x) / b);
 }
 
+function map_top(pair)
+{
+    const [x, total_places] = pair;
+
+    const last_place = lerp(total_places, 1, (1.0 - Math.pow(1.0 - slider_value, 3.0)));
+
+    return 1.0 - Math.max(Math.min(x / last_place, 1.0), 0.0);
+}
+
 function restart_display_timer()
 {
     if (display_timer !== undefined)
@@ -98,19 +107,25 @@ function restart_display_timer()
     display_timer = setTimeout(display_files, 500);
 }
 
-function show_tooltip(name, p, maybe_predicted, e)
+function show_tooltip(name, mode, p, maybe_predicted, e)
 {
     tooltip.style.display = "inline-block";
     tooltip.style.top = e.layerY + "px";
     tooltip.style.left = e.layerX + "px";
 
     var value;
-    if (Array.isArray(p))
+    if (mode === "bool")
     {
         value = p.map((is_correct) => is_correct ? "✅" : "❌").reduce((acc, x) => acc + x);
-    } else
+    } else if (mode === "certainty")
     {
         value = (p * 100.0) + "%";
+    } else if (mode === "top")
+    {
+        value = (p[0] + 1) + "/" + p[1];
+    } else
+    {
+        console.log("unrecognized mode: " + mode);
     }
 
     function fmt(x)
@@ -159,9 +174,11 @@ function clear_display()
     text_container.appendChild(line_div());
 }
 
-function append_word(word, is_boolean, is_correct_array, maybe_predicted)
+function append_word(word, mode, word_value, maybe_predicted)
 {
     const this_line_div = text_container.lastChild;
+
+    const is_boolean = mode === "bool";
 
     function background_color()
     {
@@ -170,11 +187,25 @@ function append_word(word, is_boolean, is_correct_array, maybe_predicted)
             return b ? "rgb(160, 255, 160)" : "rgb(255, 130, 130)";
         }
 
-        if (!use_gradient || !is_boolean)
+        const is_gradient_mode = (mode === "top") || (mode === "certainty");
+
+        if (!use_gradient || is_gradient_mode)
         {
-            const p = is_boolean ?
-                is_correct_array.reduce((total, is_correct) => is_correct ? (total + 1) : total, 0) / is_correct_array.length
-                : map_certainty(is_correct_array);
+            var p;
+
+            if (mode === "bool")
+            {
+                p = word_value.reduce((total, is_correct) => is_correct ? (total + 1) : total, 0) / word_value.length;
+            } else if (mode === "certainty")
+            {
+                p = map_certainty(word_value);
+            } else if (mode === "top")
+            {
+                p = map_top(word_value);
+            } else
+            {
+                console.log("unrecognized mode: " + mode);
+            }
 
             return "color-mix(in oklab, "
                 + bool_color(false)
@@ -183,7 +214,7 @@ function append_word(word, is_boolean, is_correct_array, maybe_predicted)
                 + ")";
         }
 
-        const step = 100 / is_correct_array.length;
+        const step = 100 / word_value.length;
         const step_relax = step * slider_value;
 
         function at_step(index)
@@ -204,14 +235,14 @@ function append_word(word, is_boolean, is_correct_array, maybe_predicted)
             ];
         }
 
-        const [_, gradient] = is_correct_array.reduce(gradient_concater, [0, ""]);
+        const [_, gradient] = word_value.reduce(gradient_concater, [0, ""]);
 
         return "linear-gradient(" + gradient + ")";
     }
 
     function add_listener(value)
     {
-        value.addEventListener("mouseenter", (e) => show_tooltip(word, is_correct_array, maybe_predicted, e));
+        value.addEventListener("mouseenter", (e) => show_tooltip(word, mode, word_value, maybe_predicted, e));
         value.addEventListener("mouseleave", hide_tooltip);
     }
 
@@ -284,24 +315,52 @@ function display_files(line_limit)
         return (sample === true || sample === false);
     }
 
-    var is_boolean = data_is_boolean(current_files[0][0][1]);
-
-    current_files.forEach((file) => {
-        if (is_boolean !== data_is_boolean(file[0][1]))
-        {
-            // files are different types
-            set_to_last();
-        }
-    });
-
-    is_boolean = data_is_boolean(current_files[0][0][1]);
-
-    if (is_boolean)
+    function data_mode()
     {
-        var total_words = 0;
+        var is_boolean = data_is_boolean(current_files[0][0][1]);
+
+        current_files.forEach((file) => {
+            if (is_boolean !== data_is_boolean(file[0][1]))
+            {
+                // files are different types
+                set_to_last();
+            }
+        });
+
+        is_boolean = data_is_boolean(current_files[0][0][1]);
+
+        var mode;
+
+        if (is_boolean)
+        {
+            mode = "bool";
+        } else
+        {
+            set_to_last();
+
+            if (current_files[0].some((pair) => {
+                return pair[1] > 1;
+            }))
+            {
+                mode = "top";
+            } else
+            {
+                mode = "certainty";
+            }
+        }
+
+        return mode;
+    }
+
+    const mode = data_mode();
+
+    const total_words = current_files[0].length;
+
+    if (mode === "bool")
+    {
         var total_correct = 0;
 
-        for(let i = 0; i < current_files[0].length; ++i)
+        for(let i = 0; i < total_words; ++i)
         {
             if (early_exit())
             {
@@ -321,14 +380,17 @@ function display_files(line_limit)
                 return;
             }
 
-            total_words += 1;
-
             if (current_files.some((file) => file[i][1]))
             {
                 total_correct += 1;
             }
 
-            append_word(pair[0], is_boolean, current_files.map((file) => file[i][1]));
+            append_word(
+                pair[0],
+                mode,
+                current_files.map((file) => file[i][1]),
+                current_files.length === 1 ? pair[2] : undefined
+            );
         }
 
         var message = "total combined accuracy: " + ((total_correct / total_words) * 100.0) + "%";
@@ -336,28 +398,26 @@ function display_files(line_limit)
         message += total_correct + "/" + total_words;
 
         set_data_info_text(message);
-    } else
+    } else if (mode === "certainty")
     {
         set_to_last();
 
-        var total_words = 0;
         var total_score = 0.0;
 
         const file = current_files[0];
 
-        for(let i = 0; i < current_files[0].length; ++i)
+        for(let i = 0; i < total_words; ++i)
         {
             if (early_exit())
             {
                 return;
             }
 
-            const pair = current_files[0][i];
+            const pair = file[i];
 
-            total_words += 1;
             total_score += pair[1];
 
-            append_word(pair[0], is_boolean, pair[1], pair[2]);
+            append_word(pair[0], mode, pair[1], pair[2]);
         }
 
         const total_error = total_words - total_score;
@@ -371,6 +431,37 @@ function display_files(line_limit)
         message += "accuracy: " + ((total_score / total_words) * 100.0) + "%";
 
         set_data_info_text(message);
+    } else if (mode === "top")
+    {
+        set_to_last();
+
+        var total_place = 0;
+
+        const file = current_files[0];
+
+        const metadata_count = 1;
+        const total_places = file[total_words - metadata_count][1];
+
+        for(let i = 0; i < (total_words - metadata_count); ++i)
+        {
+            if (early_exit())
+            {
+                return;
+            }
+
+            const pair = file[i];
+
+            total_place += pair[1];
+
+            append_word(pair[0], mode, [pair[1], total_places], pair[2]);
+        }
+
+        var message = "average place: " + ((total_place / total_places) + 1);
+
+        set_data_info_text(message);
+    } else
+    {
+        console.log("unrecognized mode: " + mode);
     }
 }
 
