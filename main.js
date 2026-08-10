@@ -113,11 +113,16 @@ function show_tooltip(name, p, maybe_predicted, e)
         value = (p * 100.0) + "%";
     }
 
-    tooltip.children[0].textContent = name + " " + value;
+    function fmt(x)
+    {
+        return x === "\n" ? "\\n" : x;
+    }
+
+    tooltip.children[0].textContent = fmt(name) + " " + value;
 
     if (maybe_predicted !== undefined)
     {
-        tooltip.children[0].textContent += "\npredicted: " + maybe_predicted;
+        tooltip.children[0].textContent += "\npredicted: " + fmt(maybe_predicted);
     }
 }
 
