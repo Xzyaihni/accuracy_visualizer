@@ -110,7 +110,6 @@ function restart_display_timer()
 function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
 {
     tooltip.style.display = "inline-block";
-    tooltip.style.top = e.layerY + "px";
     tooltip.style.left = e.layerX + "px";
 
     var value;
@@ -119,10 +118,10 @@ function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
         value = p.map((is_correct) => is_correct ? "✅" : "❌").reduce((acc, x) => acc + x);
     } else if (mode === "certainty")
     {
-        value = (p * 100.0) + "%";
+        value = "certainty: " + (p * 100.0) + "%";
     } else if (mode === "top")
     {
-        value = (p[0] + 1) + "/" + p[1];
+        value = "place: " + (p[0] + 1) + "/" + p[1];
     } else
     {
         console.log("unrecognized mode: " + mode);
@@ -133,13 +132,20 @@ function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
         return x === "\n" ? "\\n" : x;
     }
 
-    tooltip.children[0].textContent = "word index: " + word_index + "\n";
-    tooltip.children[0].textContent += fmt(name) + " " + value;
+    var tooltip_text = "";
+
+    tooltip_text = fmt(name) + "\n";
+    tooltip_text += "word index: " + word_index + "\n";
+    tooltip_text += value;
 
     if (maybe_predicted !== undefined)
     {
-        tooltip.children[0].textContent += "\npredicted: " + fmt(maybe_predicted);
+        tooltip_text += "\npredicted: " + fmt(maybe_predicted);
     }
+
+    tooltip.children[0].textContent = tooltip_text;
+
+    tooltip.style.top = (e.layerY - tooltip.offsetHeight) + "px";
 }
 
 function hide_tooltip()
