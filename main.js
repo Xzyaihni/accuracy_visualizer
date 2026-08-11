@@ -54,6 +54,23 @@ function word_matches(word)
     return [correct, total];
 }
 
+function top_for_percent(percent)
+{
+    const goal_count = current_files[0].length * percent;
+
+    var amount = 0;
+
+    for(; amount < current_files[0].length; ++amount)
+    {
+        if (current_files[0].reduce((acc, x) => x[1] < amount ? (acc + 1) : acc, 0) >= goal_count)
+        {
+            break;
+        }
+    }
+
+    return amount;
+}
+
 function set_data_info_text(text)
 {
     data_info_text.textContent = text;
