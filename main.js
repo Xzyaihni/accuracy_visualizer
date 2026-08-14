@@ -71,6 +71,51 @@ function top_for_percent(percent)
     return amount;
 }
 
+function longest_spans_above(certainty)
+{
+    const corrects = current_files[0].map((x) => x[1] > certainty);
+
+    let spans = [];
+    let current_span = 0;
+    for(let i = 0; i < corrects.length; ++i)
+    {
+        if (corrects[i])
+        {
+            current_span += 1;
+        } else
+        {
+            spans.push([[i - current_span, i], current_span]);
+            current_span = 0;
+        }
+    }
+
+    return spans.filter((x) => x[1] > 0).toSorted((a, b) => a[1] === b[1] ? 0 : (a[1] > b[1] ? -1 : 1));
+}
+
+function log_longest_spans_above(certainty, start, end)
+{
+    const spans = longest_spans_above(certainty);
+
+    let output = "";
+
+    const start_index = start === undefined ? 0 : start;
+    const end_index = end === undefined ? start_index + 10 : end;
+
+    for(let span_id = start_index; span_id < end_index; ++span_id)
+    {
+        output += span_id + ": ";
+
+        for(let i = spans[span_id][0][0]; i < spans[span_id][0][1]; ++i)
+        {
+            output += current_files[0][i][0];
+        }
+
+        output += "\n";
+    }
+
+    console.log(output);
+}
+
 function set_data_info_text(text)
 {
     data_info_text.textContent = text;
@@ -223,6 +268,11 @@ function append_word(word, mode, word_value, word_index, maybe_predicted)
             } else if (mode === "certainty")
             {
                 p = map_certainty(word_value);
+
+                if (!use_gradient)
+                {
+                    p = p > 0.5 ? 1.0 : 0.0;
+                }
             } else if (mode === "top")
             {
                 p = map_top(word_value);
