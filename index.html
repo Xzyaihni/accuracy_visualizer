@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <head>
-<script src="main.js" defer></script>
+  <title>accuracy visualizer</title>
+  <script src="main.js" defer></script>
 </head>
 <body>
-<div id="tooltip" style="display: none; background-color: rgb(230, 230, 230); position: absolute; border: 1px solid black; border-radius: 8px 8px 8px 0px; padding: 0px 10px"><p id="tooltip_text" style="white-space: pre">hello</p></div>
-<input type="file" id="file_picker">
-<input type="button" id="reset_button" value="reset">
-<input type="range" id="smoothness" min="0.0" max="1.0" step="any">
-<input type="checkbox" id="gradient_checkbox" checked>
-<label for="gradient_checkbox">use gradient</label>
-<br>
-<span id="data_info" style="white-space: pre">hewwo</p></span>
-<div id="text_container"></div>
+  <div id="tooltip" style="display: none; background-color: rgb(230, 230, 230); position: absolute; border: 1px solid black; border-radius: 8px 8px 8px 0px; padding: 0px 10px"><p id="tooltip_text" style="white-space: pre">hello</p></div>
+  <div>
+    <input type="file" id="file_picker">
+    <input type="button" id="reset_button" value="reset">
+    <input type="range" id="smoothness" min="0.0" max="1.0" step="any">
+    <input type="checkbox" id="gradient_checkbox" checked>
+    <label for="gradient_checkbox">use gradient</label>
+    <input type="checkbox" id="compare_checkbox">
+    <label for="compare_checkbox">display secondary</label>
+  </div>
+  <div style="border-top: 2px solid; border-bottom: 2px solid; margin-top: 10px; padding-top: 4px; padding-bottom: 4px">
+    <p style="margin: 0px">secondary file</p>
+    <input type="file" id="secondary_file_picker">
+    <input type="button" id="secondary_reset_button" value="reset">
+  </div>
+  <div style="border-top: 2px solid; border-bottom: 2px solid; margin-top: 10px; padding-top: 4px; padding-bottom: 4px">
+    <p style="margin: 0px">display span</p>
+    <input type="range" id="display_start" min="0.0" max="1.0" step="any">
+    <input type="range" id="display_amount" min="0.0" max="1.0" step="any">
+  </div>
+  <br>
+  <span id="data_info" style="white-space: pre">hewwo</span>
+  <div id="text_container"></div>
 </body>

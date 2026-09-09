@@ -1,38 +1,69 @@
 const tooltip = document.getElementById("tooltip");
 
 const file_picker = document.getElementById("file_picker");
+const secondary_file_picker = document.getElementById("secondary_file_picker");
+
 const text_container = document.getElementById("text_container");
 
 const reset_button = document.getElementById("reset_button");
+const secondary_reset_button = document.getElementById("secondary_reset_button");
 
 const smoothness = document.getElementById("smoothness");
 
+const display_start_scroll = document.getElementById("display_start");
+const display_amount_scroll = document.getElementById("display_amount");
+
 const gradient_checkbox = document.getElementById("gradient_checkbox");
+const compare_checkbox = document.getElementById("compare_checkbox");
 
 const data_info_text = document.getElementById("data_info");
 
 var slider_value = 0.0;
 var use_gradient = true;
 
+var display_start = 0.0;
+var display_amount = 1.0;
+
 smoothness.value = slider_value;
 
+display_start_scroll.value = display_start;
+display_amount_scroll.value = display_amount;
+
+var display_secondary = false;
 var display_timer = undefined;
 
 var current_files = [];
+var secondary_files = [];
 
 clear_full();
 
-file_picker.addEventListener("change", reload_file);
+file_picker.addEventListener("change", () => reload_file(file_picker, current_files));
+secondary_file_picker.addEventListener("change", () => reload_file(secondary_file_picker, secondary_files));
 
-reset_button.addEventListener("click", clear_full);
+reset_button.addEventListener("click", () => { current_files = []; clear_full(); });
+secondary_reset_button.addEventListener("click", () => { secondary_files = []; clear_full(); });
 
 smoothness.addEventListener("input", change_smoothness);
+
+display_start_scroll.addEventListener("input", (e) => change_display_span(e, true));
+display_amount_scroll.addEventListener("input", (e) => change_display_span(e, false));
 
 gradient_checkbox.addEventListener("click", () => {
     use_gradient = gradient_checkbox.checked;
 
     display_files();
 });
+
+compare_checkbox.addEventListener("click", () => {
+    display_secondary = compare_checkbox.checked;
+
+    display_files();
+});
+
+function get_current_files()
+{
+    return display_secondary ? secondary_files : current_files;
+}
 
 function word_accuracy(word)
 {
@@ -43,7 +74,9 @@ function word_accuracy(word)
 
 function word_matches(word)
 {
-    const [total, correct] = current_files[0].reduce((acc, pair) => {
+    const files = get_current_files();
+
+    const [total, correct] = files[0].reduce((acc, pair) => {
         const [total, correct] = acc;
 
         const new_correct = pair[1] ? (correct + 1) : correct;
@@ -56,13 +89,15 @@ function word_matches(word)
 
 function top_for_percent(percent)
 {
-    const goal_count = current_files[0].length * percent;
+    const files = get_current_files();
+
+    const goal_count = files[0].length * percent;
 
     var amount = 0;
 
-    for(; amount < current_files[0].length; ++amount)
+    for(; amount < files[0].length; ++amount)
     {
-        if (current_files[0].reduce((acc, x) => x[1] < amount ? (acc + 1) : acc, 0) >= goal_count)
+        if (files[0].reduce((acc, x) => x[1] < amount ? (acc + 1) : acc, 0) >= goal_count)
         {
             break;
         }
@@ -73,7 +108,9 @@ function top_for_percent(percent)
 
 function longest_spans_above(certainty)
 {
-    const corrects = current_files[0].map((x) => x[1] > certainty);
+    const files = get_current_files();
+
+    const corrects = files[0].map((x) => x[1] > certainty);
 
     let spans = [];
     let current_span = 0;
@@ -94,6 +131,8 @@ function longest_spans_above(certainty)
 
 function log_longest_spans_above(certainty, start, end)
 {
+    const files = get_current_files();
+
     const spans = longest_spans_above(certainty);
 
     let output = "";
@@ -107,7 +146,7 @@ function log_longest_spans_above(certainty, start, end)
 
         for(let i = spans[span_id][0][0]; i < spans[span_id][0][1]; ++i)
         {
-            output += current_files[0][i][0];
+            output += files[0][i][0];
         }
 
         output += "\n";
@@ -131,6 +170,19 @@ function change_smoothness(event)
     slider_value = parseFloat(event.target.value);
 
     display_files(90);
+}
+
+function change_display_span(event, is_start)
+{
+    if (is_start)
+    {
+        display_start = parseFloat(event.target.value);
+    } else
+    {
+        display_amount = parseFloat(event.target.value);
+    }
+
+    display_files();
 }
 
 function lerp(a, b, i)
@@ -225,15 +277,7 @@ function line_div()
 
 function clear_full()
 {
-    set_data_info_text("no data loaded");
-
-    clear_words();
-    clear_display();
-}
-
-function clear_words()
-{
-    current_files = [];
+    display_files();
 }
 
 function clear_display()
@@ -356,8 +400,12 @@ function display_files(line_limit)
 {
     clear_display();
 
-    if (!(current_files.length > 0))
+    const files = get_current_files();
+
+    if (!(files.length > 0))
     {
+        set_data_info_text("no data loaded");
+
         return;
     }
 
@@ -366,11 +414,18 @@ function display_files(line_limit)
         restart_display_timer();
     }
 
-    function early_exit()
+    function early_exit(total)
     {
+        if (total === undefined)
+        {
+            throw new Error("early exit must have a total");
+        }
+
+        const display_amount_i = parseInt(display_amount * total);
+
         if (line_limit === undefined)
         {
-            return false;
+            return display_amount_i < text_container.children.length;
         }
 
         return line_limit < text_container.children.length;
@@ -378,9 +433,17 @@ function display_files(line_limit)
 
     function set_to_last()
     {
-        if (current_files.length > 1)
+        if (files.length > 1)
         {
-            current_files = [current_files[current_files.length - 1]];
+            const new_files = [files[files.length - 1]];
+
+            if (display_secondary)
+            {
+                secondary_files = new_files;
+            } else
+            {
+                current_files = new_files;
+            }
         }
     }
 
@@ -391,9 +454,9 @@ function display_files(line_limit)
 
     function data_mode()
     {
-        var is_boolean = data_is_boolean(current_files[0][0][1]);
+        var is_boolean = data_is_boolean(files[0][0][1]);
 
-        current_files.forEach((file) => {
+        files.forEach((file) => {
             if (is_boolean !== data_is_boolean(file[0][1]))
             {
                 // files are different types
@@ -401,7 +464,7 @@ function display_files(line_limit)
             }
         });
 
-        is_boolean = data_is_boolean(current_files[0][0][1]);
+        is_boolean = data_is_boolean(files[0][0][1]);
 
         var mode;
 
@@ -412,7 +475,7 @@ function display_files(line_limit)
         {
             set_to_last();
 
-            if (current_files[0].some((pair) => {
+            if (files[0].some((pair) => {
                 return pair[1] > 1;
             }))
             {
@@ -428,22 +491,23 @@ function display_files(line_limit)
 
     const mode = data_mode();
 
-    const total_words = current_files[0].length;
+    const total_words = files[0].length;
+    const display_start_i = parseInt(display_start * total_words);
 
     if (mode === "bool")
     {
         var total_correct = 0;
 
-        for(let i = 0; i < total_words; ++i)
+        for(let i = display_start_i; i < total_words; ++i)
         {
-            if (early_exit())
+            if (early_exit(total_words))
             {
                 return;
             }
 
-            const pair = current_files[0][i];
+            const pair = files[0][i];
 
-            if (!current_files.every((file) => file[i][0] === pair[0]))
+            if (!files.every((file) => file[i][0] === pair[0]))
             {
                 error_message("data words mismatch");
 
@@ -454,7 +518,7 @@ function display_files(line_limit)
                 return;
             }
 
-            if (current_files.some((file) => file[i][1]))
+            if (files.some((file) => file[i][1]))
             {
                 total_correct += 1;
             }
@@ -462,9 +526,9 @@ function display_files(line_limit)
             append_word(
                 pair[0],
                 mode,
-                current_files.map((file) => file[i][1]),
+                files.map((file) => file[i][1]),
                 i,
-                current_files.length === 1 ? pair[2] : undefined
+                files.length === 1 ? pair[2] : undefined
             );
         }
 
@@ -479,11 +543,11 @@ function display_files(line_limit)
 
         var total_score = 0.0;
 
-        const file = current_files[0];
+        const file = files[0];
 
-        for(let i = 0; i < total_words; ++i)
+        for(let i = display_start_i; i < total_words; ++i)
         {
-            if (early_exit())
+            if (early_exit(total_words))
             {
                 return;
             }
@@ -512,14 +576,14 @@ function display_files(line_limit)
 
         var total_place = 0;
 
-        const file = current_files[0];
+        const file = files[0];
 
         const metadata_count = 1;
         const total_places = file[total_words - metadata_count][1];
 
-        for(let i = 0; i < (total_words - metadata_count); ++i)
+        for(let i = display_start_i; i < (total_words - metadata_count); ++i)
         {
-            if (early_exit())
+            if (early_exit(total_words))
             {
                 return;
             }
@@ -540,16 +604,16 @@ function display_files(line_limit)
     }
 }
 
-function reload_file()
+function reload_file(picker, files)
 {
     const reader = new FileReader();
 
     reader.onload = () =>
     {
-        current_files.push(JSON.parse(reader.result));
+        files.push(JSON.parse(reader.result));
 
         display_files();
     };
 
-    reader.readAsText(file_picker.files[0]);
+    reader.readAsText(picker.files[0]);
 }
