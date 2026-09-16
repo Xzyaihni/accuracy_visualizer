@@ -65,6 +65,53 @@ function get_current_files()
     return display_secondary ? secondary_files : current_files;
 }
 
+function per_line_accuracy()
+{
+    const files = get_current_files();
+
+    const file = files[0];
+
+    var is_last = true;
+
+    const line_accuracies = [];
+    var current_line = 1.0;
+
+    for(const pairs of file)
+    {
+        is_last = false;
+
+        current_line *= pairs[1];
+
+        if (pairs[0] === "\n")
+        {
+            line_accuracies.push(current_line);
+
+            current_line = 1.0;
+
+            is_last = true;
+        }
+    }
+
+    if (!is_last)
+    {
+        line_accuracies.push(current_line);
+    }
+
+    return line_accuracies;
+}
+
+function per_line_average_accuracy()
+{
+    const accuracies = per_line_accuracy();
+
+    return accuracies.reduce((a, b) => a + b) / accuracies.length;
+}
+
+function format_accuracy(accuracy, places)
+{
+    return (accuracy * 100.0).toFixed(places === undefined ? 3 : places) + "%"
+}
+
 function word_accuracy(word)
 {
     const [correct, total] = word_matches(word);
