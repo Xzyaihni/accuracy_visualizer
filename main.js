@@ -82,7 +82,7 @@ function per_line_accuracy()
 
         current_line *= pairs[1];
 
-        if (pairs[0] === "\n")
+        if (pairs[0].includes("\n"))
         {
             line_accuracies.push(current_line);
 
@@ -290,7 +290,7 @@ function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
 
     function fmt(x)
     {
-        return x === "\n" ? "\\n" : x;
+        return x.replace('\n', "\\n");
     }
 
     var tooltip_text = "";
@@ -336,8 +336,6 @@ function clear_display()
 
 function append_word(word, mode, word_value, word_index, maybe_predicted)
 {
-    const this_line_div = text_container.lastChild;
-
     const is_boolean = mode === "bool";
 
     function background_color()
@@ -411,35 +409,45 @@ function append_word(word, mode, word_value, word_index, maybe_predicted)
         value.addEventListener("mouseleave", hide_tooltip);
     }
 
-    if (word === '\n')
+    const subwords = word.split('\n');
+
+    var is_first = true;
+    for (const subword of subwords)
     {
+        if (!is_first)
         {
-            const child = document.createElement("div");
-            child.style.width = "10px";
+            {
+                const child = document.createElement("div");
+                child.style.width = "10px";
+                child.style.background = background_color();
+
+                add_listener(child);
+
+                text_container.lastChild.appendChild(child);
+            }
+
+            {
+                const child = document.createElement("br");
+
+                text_container.appendChild(child);
+            }
+
+            text_container.appendChild(line_div());
+        }
+
+        if (subword !== "")
+        {
+            const child = document.createElement("span");
+            child.textContent = subword;
             child.style.background = background_color();
+            child.style.whiteSpace = "pre";
 
             add_listener(child);
 
-            this_line_div.appendChild(child);
+            text_container.lastChild.appendChild(child);
         }
 
-        {
-            const child = document.createElement("br");
-
-            text_container.appendChild(child);
-        }
-
-        text_container.appendChild(line_div());
-    } else
-    {
-        const child = document.createElement("span");
-        child.textContent = word;
-        child.style.background = background_color();
-        child.style.whiteSpace = "pre";
-
-        add_listener(child);
-
-        this_line_div.appendChild(child);
+        is_first = false;
     }
 }
 
