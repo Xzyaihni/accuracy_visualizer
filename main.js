@@ -60,6 +60,10 @@ compare_checkbox.addEventListener("click", () => {
     display_files();
 });
 
+document.addEventListener("pointermove", (e) => {
+    set_tooltip_position(e)
+});
+
 function get_current_files()
 {
     return display_secondary ? secondary_files : current_files;
@@ -271,7 +275,6 @@ function restart_display_timer()
 function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
 {
     tooltip.style.display = "inline-block";
-    tooltip.style.left = e.layerX + "px";
 
     var value;
     if (mode === "bool")
@@ -306,6 +309,12 @@ function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
 
     tooltip.children[0].textContent = tooltip_text;
 
+    set_tooltip_position(e);
+}
+
+function set_tooltip_position(e)
+{
+    tooltip.style.left = e.layerX + "px";
     tooltip.style.top = (e.layerY - tooltip.offsetHeight) + "px";
 }
 
