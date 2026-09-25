@@ -606,6 +606,7 @@ function display_files(line_limit)
         set_to_last();
 
         var total_score = 0.0;
+        var top_correct = 0;
 
         const file = files[0];
 
@@ -620,6 +621,11 @@ function display_files(line_limit)
 
             total_score += pair[1];
 
+            if (pair[0] === pair[2])
+            {
+                top_correct += 1;
+            }
+
             append_word(pair[0], mode, pair[1], i, pair[2]);
         }
 
@@ -632,6 +638,8 @@ function display_files(line_limit)
         message += "total score: " + total_score;
         message += "\n";
         message += "accuracy: " + ((total_score / total_words) * 100.0) + "%";
+        message += "\n";
+        message += "top prediction accuracy: " + ((top_correct / total_words) * 100.0) + "%";
 
         set_data_info_text(message);
     } else if (mode === "top")
