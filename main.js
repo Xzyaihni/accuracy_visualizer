@@ -16,6 +16,7 @@ const display_amount_scroll = document.getElementById("display_amount");
 const gradient_checkbox = document.getElementById("gradient_checkbox");
 const compare_checkbox = document.getElementById("compare_checkbox");
 const is_correct_checkbox = document.getElementById("is_correct_checkbox");
+const predicted_only_checkbox = document.getElementById("predicted_only_checkbox");
 
 const data_info_text = document.getElementById("data_info");
 
@@ -34,6 +35,7 @@ var display_secondary = false;
 var display_timer = undefined;
 
 var color_if_correct = false;
+var show_predicted_only = false;
 
 var current_files = [];
 var secondary_files = [];
@@ -72,6 +74,12 @@ compare_checkbox.addEventListener("click", () => {
 
 is_correct_checkbox.addEventListener("click", () => {
     color_if_correct = is_correct_checkbox.checked;
+
+    display_files();
+});
+
+predicted_only_checkbox.addEventListener("click", () => {
+    show_predicted_only = predicted_only_checkbox.checked;
 
     display_files();
 });
@@ -440,7 +448,17 @@ function append_word(word, mode, word_value, word_index, maybe_predicted)
         value.addEventListener("mouseleave", hide_tooltip);
     }
 
-    const subwords = word.split('\n');
+    var show_word;
+
+    if (show_predicted_only)
+    {
+        show_word = maybe_predicted;
+    } else
+    {
+        show_word = word;
+    }
+
+    const subwords = show_word.split('\n');
 
     var is_first = true;
     for (const subword of subwords)
@@ -449,8 +467,10 @@ function append_word(word, mode, word_value, word_index, maybe_predicted)
         {
             {
                 const child = document.createElement("div");
+                child.textContent = " ";
                 child.style.width = "10px";
                 child.style.background = background_color();
+                child.style.whiteSpace = "pre";
 
                 add_listener(child);
 
