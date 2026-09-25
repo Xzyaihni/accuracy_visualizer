@@ -236,7 +236,7 @@ function change_smoothness(event)
 {
     slider_value = parseFloat(event.target.value);
 
-    display_files(90);
+    display_files(900);
 }
 
 function change_display_span(event, is_start)
