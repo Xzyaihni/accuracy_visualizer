@@ -37,8 +37,15 @@ var secondary_files = [];
 
 clear_full();
 
-file_picker.addEventListener("change", () => reload_file(file_picker, current_files));
-secondary_file_picker.addEventListener("change", () => reload_file(secondary_file_picker, secondary_files));
+file_picker.addEventListener("change", () => {
+    current_files = [];
+    reload_file(file_picker, current_files);
+});
+
+secondary_file_picker.addEventListener("change", () => {
+    secondary_files = [];
+    reload_file(secondary_file_picker, secondary_files);
+});
 
 reset_button.addEventListener("click", () => { current_files = []; clear_full(); });
 secondary_reset_button.addEventListener("click", () => { secondary_files = []; clear_full(); });
