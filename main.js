@@ -15,6 +15,7 @@ const display_amount_scroll = document.getElementById("display_amount");
 
 const gradient_checkbox = document.getElementById("gradient_checkbox");
 const compare_checkbox = document.getElementById("compare_checkbox");
+const is_correct_checkbox = document.getElementById("is_correct_checkbox");
 
 const data_info_text = document.getElementById("data_info");
 
@@ -31,6 +32,8 @@ display_amount_scroll.value = display_amount;
 
 var display_secondary = false;
 var display_timer = undefined;
+
+var color_if_correct = false;
 
 var current_files = [];
 var secondary_files = [];
@@ -63,6 +66,12 @@ gradient_checkbox.addEventListener("click", () => {
 
 compare_checkbox.addEventListener("click", () => {
     display_secondary = compare_checkbox.checked;
+
+    display_files();
+});
+
+is_correct_checkbox.addEventListener("click", () => {
+    color_if_correct = is_correct_checkbox.checked;
 
     display_files();
 });
@@ -372,11 +381,17 @@ function append_word(word, mode, word_value, word_index, maybe_predicted)
                 p = word_value.reduce((total, is_correct) => is_correct ? (total + 1) : total, 0) / word_value.length;
             } else if (mode === "certainty")
             {
-                p = map_certainty(word_value);
-
-                if (!use_gradient)
+                if (color_if_correct)
                 {
-                    p = p > 0.5 ? 1.0 : 0.0;
+                    p = word === maybe_predicted ? 1.0 : 0.0;
+                } else
+                {
+                    p = map_certainty(word_value);
+
+                    if (!use_gradient)
+                    {
+                        p = p > 0.5 ? 1.0 : 0.0;
+                    }
                 }
             } else if (mode === "top")
             {
@@ -485,7 +500,7 @@ function display_files(line_limit)
         restart_display_timer();
     }
 
-    function early_exit(total)
+    function is_early_exit(current, total)
     {
         if (total === undefined)
         {
@@ -496,10 +511,22 @@ function display_files(line_limit)
 
         if (line_limit === undefined)
         {
-            return display_amount_i < text_container.children.length;
+            return display_amount_i < current;
         }
 
-        return line_limit < text_container.children.length;
+        return line_limit < current;
+    }
+
+    function early_exit(current, total)
+    {
+        const is_early_exited = is_early_exit(current, total);
+
+        if (is_early_exited)
+        {
+            set_data_info_text("early exited");
+        }
+
+        return is_early_exited;
     }
 
     function set_to_last()
@@ -571,7 +598,7 @@ function display_files(line_limit)
 
         for(let i = display_start_i; i < total_words; ++i)
         {
-            if (early_exit(total_words))
+            if (early_exit(i - display_start, total_words))
             {
                 return;
             }
@@ -621,7 +648,7 @@ function display_files(line_limit)
 
         for(let i = display_start_i; i < total_words; ++i)
         {
-            if (early_exit(total_words))
+            if (early_exit(i - display_start, total_words))
             {
                 return;
             }
@@ -670,7 +697,7 @@ function display_files(line_limit)
 
         for(let i = display_start_i; i < (total_words - metadata_count); ++i)
         {
-            if (early_exit(total_words))
+            if (early_exit(i - display_start, total_words))
             {
                 return;
             }
