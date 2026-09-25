@@ -608,6 +608,8 @@ function display_files(line_limit)
         var total_score = 0.0;
         var top_correct = 0;
 
+        var likelyhoods = 0.0;
+
         const file = files[0];
 
         for(let i = display_start_i; i < total_words; ++i)
@@ -626,10 +628,14 @@ function display_files(line_limit)
                 top_correct += 1;
             }
 
+            likelyhoods += Math.log(pair[1]);
+
             append_word(pair[0], mode, pair[1], i, pair[2]);
         }
 
         const total_error = total_words - total_score;
+
+        const perplexity = Math.exp(-likelyhoods / total_words);
 
         var message = "total error: " + total_error;
         message += "\n";
@@ -640,6 +646,8 @@ function display_files(line_limit)
         message += "accuracy: " + ((total_score / total_words) * 100.0) + "%";
         message += "\n";
         message += "top prediction accuracy: " + ((top_correct / total_words) * 100.0) + "%";
+        message += "\n";
+        message += "perplexity: " + perplexity;
 
         set_data_info_text(message);
     } else if (mode === "top")
