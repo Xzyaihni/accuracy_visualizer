@@ -306,7 +306,10 @@ function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
         value = p.map((is_correct) => is_correct ? "✅" : "❌").reduce((acc, x) => acc + x);
     } else if (mode === "certainty")
     {
-        value = "certainty: " + (p * 100.0) + "%";
+        value = "correct probability: " + (p.correct_probability * 100.0) + "%";
+        value += "\npick probability: " + (p.wrong_probability * 100.0) + "%";
+        value += "\ncorrect certainty: " + (p.correct_certainty * 100.0) + "%";
+        value += "\npick certainty: " + (p.wrong_certainty * 100.0) + "%";
     } else if (mode === "top")
     {
         value = "place: " + (p[0] + 1) + "/" + p[1];
@@ -394,7 +397,7 @@ function append_word(word, mode, word_value, word_index, maybe_predicted)
                     p = word === maybe_predicted ? 1.0 : 0.0;
                 } else
                 {
-                    p = map_certainty(word_value);
+                    p = map_certainty(word_value.correct_probability);
 
                     if (!use_gradient)
                     {
@@ -445,6 +448,7 @@ function append_word(word, mode, word_value, word_index, maybe_predicted)
     function add_listener(value)
     {
         value.addEventListener("mouseenter", (e) => show_tooltip(word, mode, word_value, word_index, maybe_predicted, e));
+
         value.addEventListener("mouseleave", hide_tooltip);
     }
 
@@ -675,14 +679,14 @@ function display_files(line_limit)
 
             const pair = file[i];
 
-            total_score += pair[1];
+            total_score += pair[1].correct_probability;
 
             if (pair[0] === pair[2])
             {
                 top_correct += 1;
             }
 
-            likelyhoods += Math.log(pair[1]);
+            likelyhoods += Math.log(pair[1].correct_probability);
 
             append_word(pair[0], mode, pair[1], i, pair[2]);
         }
