@@ -1,3 +1,5 @@
+"use strict";
+
 const tooltip = document.getElementById("tooltip");
 
 const file_picker = document.getElementById("file_picker");
@@ -39,6 +41,9 @@ var show_predicted_only = false;
 
 var current_files = [];
 var secondary_files = [];
+
+var word_decoder = undefined;
+
 
 clear_full();
 
@@ -318,9 +323,28 @@ function show_tooltip(name, mode, p, word_index, maybe_predicted, e)
         console.log("unrecognized mode: " + mode);
     }
 
+    function fmt_raw(x)
+    {
+        const word_decoder = new TextDecoder("utf-8", {fatal: true});
+
+        const show_word_bytes = new Uint8Array(x);
+
+        var decoded_word;
+
+        try
+        {
+            decoded_word = word_decoder.decode(show_word_bytes);
+        } catch (err)
+        {
+            decoded_word = show_word_bytes.toString();
+        }
+
+        return decoded_word;
+    }
+
     function fmt(x)
     {
-        return x.replace('\n', "\\n");
+        return (typeof x === "string") ? x.replace('\n', "\\n") : fmt(fmt_raw(x));
     }
 
     var tooltip_text = "";
@@ -368,82 +392,84 @@ function clear_display()
     text_container.replaceChildren();
 
     text_container.appendChild(line_div());
+
+    word_decoder = undefined;
 }
 
-function append_word(word, mode, word_value, word_index, maybe_predicted)
+function background_color_of(word, mode, word_value, word_index, maybe_predicted)
 {
-    const is_boolean = mode === "bool";
-
-    function background_color()
+    function bool_color(b)
     {
-        function bool_color(b)
+        return b ? "rgb(160, 255, 160)" : "rgb(255, 130, 130)";
+    }
+
+    const is_gradient_mode = (mode === "top") || (mode === "certainty");
+
+    if (!use_gradient || is_gradient_mode)
+    {
+        var p;
+
+        if (mode === "bool")
         {
-            return b ? "rgb(160, 255, 160)" : "rgb(255, 130, 130)";
-        }
-
-        const is_gradient_mode = (mode === "top") || (mode === "certainty");
-
-        if (!use_gradient || is_gradient_mode)
+            p = word_value.reduce((total, is_correct) => is_correct ? (total + 1) : total, 0) / word_value.length;
+        } else if (mode === "certainty")
         {
-            var p;
-
-            if (mode === "bool")
+            if (color_if_correct)
             {
-                p = word_value.reduce((total, is_correct) => is_correct ? (total + 1) : total, 0) / word_value.length;
-            } else if (mode === "certainty")
-            {
-                if (color_if_correct)
-                {
-                    p = word === maybe_predicted ? 1.0 : 0.0;
-                } else
-                {
-                    p = map_certainty(word_value.correct_probability);
-
-                    if (!use_gradient)
-                    {
-                        p = p > 0.5 ? 1.0 : 0.0;
-                    }
-                }
-            } else if (mode === "top")
-            {
-                p = map_top(word_value);
+                p = word.toString() === maybe_predicted.toString() ? 1.0 : 0.0;
             } else
             {
-                console.log("unrecognized mode: " + mode);
+                p = map_certainty(word_value.correct_probability);
+
+                if (!use_gradient)
+                {
+                    p = p > 0.5 ? 1.0 : 0.0;
+                }
             }
-
-            return "color-mix(in oklab, "
-                + bool_color(false)
-                + ", "
-                + bool_color(true) + (p * 100.0) + "%"
-                + ")";
-        }
-
-        const step = 100 / word_value.length;
-        const step_relax = step * slider_value;
-
-        function at_step(index)
+        } else if (mode === "top")
         {
-            return step * index;
-        }
-
-        function gradient_concater(acc_args, value)
+            p = map_top(word_value);
+        } else
         {
-            const [index, acc] = acc_args;
-
-            const formatted = String(bool_color(value));
-            return [
-                index + 1,
-                (index === 0) ?
-                    (formatted + " " + (step - step_relax) + "%")
-                    : (acc + ", " + formatted + " " + (at_step(index) + step_relax) + "%" + " " + (at_step(index + 1) - step_relax) + "%")
-            ];
+            console.log("unrecognized mode: " + mode);
         }
 
-        const [_, gradient] = word_value.reduce(gradient_concater, [0, ""]);
-
-        return "linear-gradient(" + gradient + ")";
+        return "color-mix(in oklab, "
+            + bool_color(false)
+            + ", "
+            + bool_color(true) + (p * 100.0) + "%"
+            + ")";
     }
+
+    const step = 100 / word_value.length;
+    const step_relax = step * slider_value;
+
+    function at_step(index)
+    {
+        return step * index;
+    }
+
+    function gradient_concater(acc_args, value)
+    {
+        const [index, acc] = acc_args;
+
+        const formatted = String(bool_color(value));
+        return [
+            index + 1,
+            (index === 0) ?
+                (formatted + " " + (step - step_relax) + "%")
+                : (acc + ", " + formatted + " " + (at_step(index) + step_relax) + "%" + " " + (at_step(index + 1) - step_relax) + "%")
+        ];
+    }
+
+    const [_, gradient] = word_value.reduce(gradient_concater, [0, ""]);
+
+    return "linear-gradient(" + gradient + ")";
+}
+
+function append_word(word, mode, word_value, word_index, maybe_predicted, is_last_word)
+{
+    const is_boolean = mode === "bool";
 
     function add_listener(value)
     {
@@ -462,7 +488,29 @@ function append_word(word, mode, word_value, word_index, maybe_predicted)
         show_word = word;
     }
 
-    const subwords = show_word.split('\n');
+    function background_color()
+    {
+        return background_color_of(word, mode, word_value, word_index, maybe_predicted);
+    }
+
+    var final_word_text = show_word;
+    if (typeof show_word !== "string")
+    {
+        if (word_decoder === undefined)
+        {
+            word_decoder = new TextDecoder();
+        }
+
+        const show_word_bytes = new Uint8Array(show_word);
+
+        const decoded_word = word_decoder.decode(show_word_bytes, {
+            stream: !is_last_word
+        });
+
+        final_word_text = decoded_word;
+    }
+
+    const subwords = final_word_text.split('\n');
 
     var is_first = true;
     for (const subword of subwords)
@@ -650,7 +698,8 @@ function display_files(line_limit)
                 mode,
                 files.map((file) => file[i][1]),
                 i,
-                files.length === 1 ? pair[2] : undefined
+                files.length === 1 ? pair[2] : undefined,
+                (i + 1) === total_words
             );
         }
 
@@ -681,14 +730,14 @@ function display_files(line_limit)
 
             total_score += pair[1].correct_probability;
 
-            if (pair[0] === pair[2])
+            if (pair[0].toString() === pair[2].toString())
             {
                 top_correct += 1;
             }
 
             likelyhoods += Math.log(pair[1].correct_probability);
 
-            append_word(pair[0], mode, pair[1], i, pair[2]);
+            append_word(pair[0], mode, pair[1], i, pair[2], (i + 1) === total_words);
         }
 
         const total_error = total_words - total_score;
@@ -730,7 +779,7 @@ function display_files(line_limit)
 
             total_place += pair[1];
 
-            append_word(pair[0], mode, [pair[1], total_places], i, pair[2]);
+            append_word(pair[0], mode, [pair[1], total_places], i, pair[2], (i + 1) === total_words);
         }
 
         var message = "average place: " + ((total_place / total_places) + 1);
