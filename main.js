@@ -19,6 +19,7 @@ const gradient_checkbox = document.getElementById("gradient_checkbox");
 const compare_checkbox = document.getElementById("compare_checkbox");
 const is_correct_checkbox = document.getElementById("is_correct_checkbox");
 const predicted_only_checkbox = document.getElementById("predicted_only_checkbox");
+const pick_probability_checkbox = document.getElementById("pick_probability_checkbox");
 
 const data_info_text = document.getElementById("data_info");
 
@@ -38,6 +39,7 @@ var display_timer = undefined;
 
 var color_if_correct = false;
 var show_predicted_only = false;
+var display_pick_probability = false;
 
 var current_files = [];
 var secondary_files = [];
@@ -85,6 +87,12 @@ is_correct_checkbox.addEventListener("click", () => {
 
 predicted_only_checkbox.addEventListener("click", () => {
     show_predicted_only = predicted_only_checkbox.checked;
+
+    display_files();
+});
+
+pick_probability_checkbox.addEventListener("click", () => {
+    display_pick_probability = pick_probability_checkbox.checked;
 
     display_files();
 });
@@ -419,7 +427,7 @@ function background_color_of(word, mode, word_value, word_index, maybe_predicted
                 p = word.toString() === maybe_predicted.toString() ? 1.0 : 0.0;
             } else
             {
-                p = map_certainty(word_value.correct_probability);
+                p = map_certainty(display_pick_probability ? word_value.wrong_probability : word_value.correct_probability);
 
                 if (!use_gradient)
                 {
