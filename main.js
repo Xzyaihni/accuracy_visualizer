@@ -20,6 +20,7 @@ const compare_checkbox = document.getElementById("compare_checkbox");
 const is_correct_checkbox = document.getElementById("is_correct_checkbox");
 const predicted_only_checkbox = document.getElementById("predicted_only_checkbox");
 const pick_probability_checkbox = document.getElementById("pick_probability_checkbox");
+const certainty_checkbox = document.getElementById("certainty_checkbox");
 
 const data_info_text = document.getElementById("data_info");
 
@@ -40,6 +41,7 @@ var display_timer = undefined;
 var color_if_correct = false;
 var show_predicted_only = false;
 var display_pick_probability = false;
+var display_certainty = false;
 
 var current_files = [];
 var secondary_files = [];
@@ -93,6 +95,12 @@ predicted_only_checkbox.addEventListener("click", () => {
 
 pick_probability_checkbox.addEventListener("click", () => {
     display_pick_probability = pick_probability_checkbox.checked;
+
+    display_files();
+});
+
+certainty_checkbox.addEventListener("click", () => {
+    display_certainty = certainty_checkbox.checked;
 
     display_files();
 });
@@ -427,7 +435,11 @@ function background_color_of(word, mode, word_value, word_index, maybe_predicted
                 p = word.toString() === maybe_predicted.toString() ? 1.0 : 0.0;
             } else
             {
-                p = map_certainty(display_pick_probability ? word_value.wrong_probability : word_value.correct_probability);
+                const value = display_pick_probability ?
+                    (display_certainty ? word_value.wrong_certainty : word_value.wrong_probability)
+                    : (display_certainty ? word_value.correct_certainty : word_value.correct_probability);
+
+                p = map_certainty(value);
 
                 if (!use_gradient)
                 {
