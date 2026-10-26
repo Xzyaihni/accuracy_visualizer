@@ -13,8 +13,11 @@
     <label for="gradient_checkbox">use gradient</label>
     <input type="checkbox" id="is_correct_checkbox">
     <label for="is_correct_checkbox">color only if correct</label>
-    <input type="checkbox" id="predicted_only_checkbox">
-    <label for="predicted_only_checkbox">only display predicted outputs</label>
+    <select id="display_mode_select">
+      <option value="all">display all</option>
+      <option value="predicted_only">only display predicted outputs</option>
+      <option value="correct_only">only display correct outputs</option>
+    </select>
     <input type="checkbox" id="pick_probability_checkbox">
     <label for="pick_probability_checkbox">show pick probability</label>
     <input type="checkbox" id="certainty_checkbox">

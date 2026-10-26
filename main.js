@@ -18,7 +18,7 @@ const display_amount_scroll = document.getElementById("display_amount");
 const gradient_checkbox = document.getElementById("gradient_checkbox");
 const compare_checkbox = document.getElementById("compare_checkbox");
 const is_correct_checkbox = document.getElementById("is_correct_checkbox");
-const predicted_only_checkbox = document.getElementById("predicted_only_checkbox");
+const display_mode_select = document.getElementById("display_mode_select");
 const pick_probability_checkbox = document.getElementById("pick_probability_checkbox");
 const certainty_checkbox = document.getElementById("certainty_checkbox");
 
@@ -39,7 +39,7 @@ var display_secondary = false;
 var display_timer = undefined;
 
 var color_if_correct = false;
-var show_predicted_only = false;
+var display_mode = display_mode_select.value;
 var display_pick_probability = false;
 var display_certainty = false;
 
@@ -87,8 +87,8 @@ is_correct_checkbox.addEventListener("click", () => {
     display_files();
 });
 
-predicted_only_checkbox.addEventListener("click", () => {
-    show_predicted_only = predicted_only_checkbox.checked;
+display_mode_select.addEventListener("click", () => {
+    display_mode = display_mode_select.value;
 
     display_files();
 });
@@ -500,12 +500,20 @@ function append_word(word, mode, word_value, word_index, maybe_predicted, is_las
 
     var show_word;
 
-    if (show_predicted_only)
+    if (display_mode === "predicted_only")
     {
         show_word = maybe_predicted;
-    } else
+    } else if (display_mode === "all")
     {
         show_word = word;
+    } else if (display_mode === "correct_only")
+    {
+        if (word.toString() !== maybe_predicted.toString()) { return; }
+
+        show_word = word;
+    } else
+    {
+        throw "unknown display mode: " + display_mode;
     }
 
     function background_color()
