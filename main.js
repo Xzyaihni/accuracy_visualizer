@@ -600,14 +600,16 @@ function display_files(line_limit)
         restart_display_timer();
     }
 
+    const total_words = files[0].length;
+    const display_amount_i = parseInt(display_amount * total_words);
+    const display_start_i = parseInt(display_start * total_words);
+
     function is_early_exit(current, total)
     {
         if (total === undefined)
         {
             throw new Error("early exit must have a total");
         }
-
-        const display_amount_i = parseInt(display_amount * total);
 
         if (line_limit === undefined)
         {
@@ -689,9 +691,6 @@ function display_files(line_limit)
 
     const mode = data_mode();
 
-    const total_words = files[0].length;
-    const display_start_i = parseInt(display_start * total_words);
-
     if (mode === "bool")
     {
         var total_correct = 0;
@@ -700,7 +699,7 @@ function display_files(line_limit)
         {
             if (early_exit(i - display_start_i, total_words))
             {
-                return;
+                break;
             }
 
             const pair = files[0][i];
@@ -731,9 +730,10 @@ function display_files(line_limit)
             );
         }
 
-        var message = "total combined accuracy: " + ((total_correct / total_words) * 100.0) + "%";
+        const span_total_words = display_amount_i;
+        var message = "total combined accuracy: " + ((total_correct / span_total_words) * 100.0) + "%";
         message += "\n";
-        message += total_correct + "/" + total_words;
+        message += total_correct + "/" + span_total_words;
 
         set_data_info_text(message);
     } else if (mode === "certainty")
@@ -751,7 +751,7 @@ function display_files(line_limit)
         {
             if (early_exit(i - display_start_i, total_words))
             {
-                return;
+                break;
             }
 
             const pair = file[i];
@@ -768,19 +768,20 @@ function display_files(line_limit)
             append_word(pair[0], mode, pair[1], i, pair[2], (i + 1) === total_words);
         }
 
-        const total_error = total_words - total_score;
+        const span_total_words = display_amount_i;
+        const total_error = span_total_words - total_score;
 
-        const perplexity = Math.exp(-likelyhoods / total_words);
+        const perplexity = Math.exp(-likelyhoods / span_total_words);
 
         var message = "total error: " + total_error;
         message += "\n";
-        message += "average error: " + ((total_error / total_words) * 100.0) + "%";
+        message += "average error: " + ((total_error / span_total_words) * 100.0) + "%";
         message += "\n";
         message += "total score: " + total_score;
         message += "\n";
-        message += "accuracy: " + ((total_score / total_words) * 100.0) + "%";
+        message += "accuracy: " + ((total_score / span_total_words) * 100.0) + "%";
         message += "\n";
-        message += "top prediction accuracy: " + ((top_correct / total_words) * 100.0) + "%";
+        message += "top prediction accuracy: " + ((top_correct / span_total_words) * 100.0) + "%";
         message += "\n";
         message += "perplexity: " + perplexity;
 
@@ -800,7 +801,7 @@ function display_files(line_limit)
         {
             if (early_exit(i - display_start_i, total_words))
             {
-                return;
+                break;
             }
 
             const pair = file[i];
