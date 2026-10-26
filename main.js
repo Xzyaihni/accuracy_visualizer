@@ -698,7 +698,7 @@ function display_files(line_limit)
 
         for(let i = display_start_i; i < total_words; ++i)
         {
-            if (early_exit(i - display_start, total_words))
+            if (early_exit(i - display_start_i, total_words))
             {
                 return;
             }
@@ -749,7 +749,7 @@ function display_files(line_limit)
 
         for(let i = display_start_i; i < total_words; ++i)
         {
-            if (early_exit(i - display_start, total_words))
+            if (early_exit(i - display_start_i, total_words))
             {
                 return;
             }
@@ -798,7 +798,7 @@ function display_files(line_limit)
 
         for(let i = display_start_i; i < (total_words - metadata_count); ++i)
         {
-            if (early_exit(i - display_start, total_words))
+            if (early_exit(i - display_start_i, total_words))
             {
                 return;
             }
